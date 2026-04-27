@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Check-in dashboard</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; min-height: 100vh; padding: 2rem 1rem; }
+  .container { max-width: 860px; margin: 0 auto; }
+  .pin-screen { display: flex; align-items: center; justify-content: center; min-height: 80vh; }
+  .pin-card { background: #fff; border: 1px solid #e0ddd6; border-radius: 12px; padding: 2rem; width: 100%; max-width: 340px; text-align: center; }
+  .pin-card h1 { font-size: 18px; font-weight: 600; color: #1a1a1a; margin-bottom: 6px; }
+  .pin-card p { font-size: 13px; color: #6b6b6b; margin-bottom: 1.5rem; }
+  .pin-card input { width: 100%; padding: 10px 12px; border: 1px solid #d0cdc6; border-radius: 8px; font-size: 20px; text-align: center; letter-spacing: 8px; outline: none; font-family: inherit; }
+  .pin-card input:focus { border-color: #888; }
+  .pin-error { font-size: 12px; color: #c0392b; margin-top: 8px; display: none; }
+  .pin-btn { width: 100%; margin-top: 1rem; padding: 10px; border: 1px solid #c0c0b8; border-radius: 8px; background: #fff; font-size: 14px; font-weight: 500; cursor: pointer; font-family: inherit; transition: background 0.15s; }
+  .pin-btn:hover { background: #f0efeb; }
+  .dash-screen { display: none; }
+  .dash-header { background: #fff; border: 1px solid #e0ddd6; border-radius: 12px; padding: 1.25rem 1.5rem; margin-bottom: 1.25rem; display: flex; align-items: center; justify-content: space-between; }
+  .dash-header h1 { font-size: 18px; font-weight: 600; color: #1a1a1a; }
+  .dash-header p { font-size: 13px; color: #6b6b6b; margin-top: 2px; }
+  .refresh-btn { padding: 7px 14px; border: 1px solid #d0cdc6; border-radius: 8px; background: #fff; font-size: 13px; cursor: pointer; font-family: inherit; transition: background 0.15s; color: #1a1a1a; }
+  .refresh-btn:hover { background: #f0efeb; }
+  .metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 1.25rem; }
+  .metric { background: #fff; border: 1px solid #e0ddd6; border-radius: 10px; padding: 1rem 1.25rem; }
+  .metric .label { font-size: 12px; color: #6b6b6b; margin-bottom: 4px; }
+  .metric .value { font-size: 26px; font-weight: 600; color: #1a1a1a; }
+  .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; margin-bottom: 1.25rem; }
+  .panel { background: #fff; border: 1px solid #e0ddd6; border-radius: 10px; padding: 1.25rem; }
+  .panel h2 { font-size: 13px; font-weight: 600; color: #4a4a4a; margin-bottom: 1rem; }
+  .mood-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .mood-label { width: 120px; font-size: 12px; color: #6b6b6b; flex-shrink: 0; }
+  .mood-bar-wrap { flex: 1; background: #f0efeb; border-radius: 4px; height: 8px; overflow: hidden; }
+  .mood-bar { height: 8px; border-radius: 4px; transition: width 0.4s; }
+  .bar-1 { background: #E24B4A; }
+  .bar-2 { background: #EF9F27; }
+  .bar-3 { background: #888780; }
+  .bar-4 { background: #1D9E75; }
+  .bar-5 { background: #0F6E56; }
+  .mood-count { font-size: 12px; font-weight: 500; min-width: 20px; text-align: right; color: #1a1a1a; }
+  .recent-list { display: flex; flex-direction: column; gap: 8px; }
+  .recent-item { background: #f5f5f3; border-radius: 8px; padding: 10px 12px; }
+  .recent-name { font-size: 13px; font-weight: 500; color: #1a1a1a; }
+  .recent-meta { font-size: 12px; color: #6b6b6b; margin-top: 2px; }
+  .response-section { background: #fff; border: 1px solid #e0ddd6; border-radius: 10px; padding: 1.25rem; }
+  .response-section h2 { font-size: 13px; font-weight: 600; color: #4a4a4a; margin-bottom: 1rem; }
+  .sort-bar { display: flex; gap: 8px; margin-bottom: 1rem; align-items: center; }
+  .sort-bar span { font-size: 12px; color: #6b6b6b; }
+  .sort-btn { padding: 4px 10px; font-size: 12px; border: 1px solid #d0cdc6; border-radius: 6px; background: #fff; cursor: pointer; color: #1a1a1a; font-family: inherit; }
+  .sort-btn.active { background: #f0efeb; border-color: #888; font-weight: 500; }
+  .response-list { display: flex; flex-direction: column; gap: 10px; }
+  .response-card { border: 1px solid #e0ddd6; border-radius: 10px; padding: 1rem 1.25rem; }
+  .name-row { display: flex; align-items: center; gap: 10px; margin-bottom: 10px; }
+  .avatar { width: 32px; height: 32px; border-radius: 50%; background: #f0efeb; border: 1px solid #e0ddd6; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 600; color: #4a4a4a; flex-shrink: 0; }
+  .name-meta { flex: 1; }
+  .name-meta .name { font-size: 14px; font-weight: 500; color: #1a1a1a; }
+  .name-meta .time { font-size: 12px; color: #6b6b6b; }
+  .response-fields { display: grid; grid-template-columns: 1fr 1fr; gap: 8px; margin-top: 8px; }
+  .rf { background: #f5f5f3; border-radius: 8px; padding: 8px 10px; }
+  .rf.full { grid-column: 1 / -1; }
+  .rf-label { font-size: 11px; color: #6b6b6b; margin-bottom: 3px; }
+  .rf-val { font-size: 13px; color: #1a1a1a; line-height: 1.5; }
+  .flag { border-left: 3px solid #E24B4A; }
+  .empty { font-size: 13px; color: #6b6b6b; padding: 1rem 0; }
+  @media (max-width: 600px) {
+    .panels { grid-template-columns: 1fr; }
+    .metrics { grid-template-columns: 1fr 1fr; }
+    .response-fields { grid-template-columns: 1fr; }
+    .rf.full { grid-column: 1; }
+  }
+</style>
+</head>
+<body>
+<div class="container">
+
+  <div class="pin-screen" id="pin-screen">
+    <div class="pin-card">
+      <h1>Dashboard</h1>
+      <p>Enter your PIN to access student check-in responses.</p>
+      <input type="password" id="pin-input" maxlength="4" placeholder="····" onkeydown="if(event.key==='Enter') checkPin()" />
+      <div class="pin-error" id="pin-error">Incorrect PIN. Please try again.</div>
+      <button class="pin-btn" onclick="checkPin()">Continue</button>
+    </div>
+  </div>
+
+  <div class="dash-screen" id="dash-screen">
+    <div class="dash-header">
+      <div>
+        <h1>Check-in dashboard</h1>
+        <p id="last-updated">Loading responses...</p>
+      </div>
+      <button class="refresh-btn" onclick="loadData()">Refresh</button>
+    </div>
+    <div class="metrics">
+      <div class="metric"><div class="label">Total responses</div><div class="value" id="m-total">-</div></div>
+      <div class="metric"><div class="label">Average wellbeing</div><div class="value" id="m-avg">-</div></div>
+      <div class="metric"><div class="label">May need follow-up</div><div class="value" id="m-flag">-</div></div>
+    </div>
+    <div class="panels">
+      <div class="panel">
+        <h2>Wellbeing distribution</h2>
+        <div id="mood-breakdown"></div>
+      </div>
+      <div class="panel">
+        <h2>Most recent responses</h2>
+        <div class="recent-list" id="recent-list"></div>
+      </div>
+    </div>
+    <div class="response-section">
+      <h2>All responses</h2>
+      <div class="sort-bar">
+        <span>Sort:</span>
+        <button class="sort-btn active" onclick="sortBy('time', this)">Most recent</button>
+        <button class="sort-btn" onclick="sortBy('mood', this)">Wellbeing (low first)</button>
+        <button class="sort-btn" onclick="sortBy('flag', this)">Needs follow-up first</button>
+      </div>
+      <div class="response-list" id="response-list"></div>
+    </div>
+  </div>
+
+</div>
+<script>
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxIrpKbQe9yCFhV_C3BrNYR6E-5-YmSyvNShgoThrFQJ7fbqpc507BkYwUSbRfh1HrE/exec';
+const PIN = '2306';
+const moodOrder = ['Really struggling', 'Finding it difficult', 'Managing', 'Doing well', 'Feeling great'];
+const barClass = ['bar-1', 'bar-2', 'bar-3', 'bar-4', 'bar-5'];
+let allData = [];
+let currentSort = 'time';
+
+function checkPin() {
+  const val = document.getElementById('pin-input').value.trim();
+  if (val === PIN) {
+    document.getElementById('pin-screen').style.display = 'none';
+    document.getElementById('dash-screen').style.display = 'block';
+    loadData();
+  } else {
+    document.getElementById('pin-error').style.display = 'block';
+    document.getElementById('pin-input').value = '';
+  }
+}
+
+async function loadData() {
+  document.getElementById('last-updated').textContent = 'Loading...';
+  try {
+    const res = await fetch(ENDPOINT + '?t=' + Date.now());
+    const json = await res.json();
+    if (json.result === 'success') {
+      allData = json.data.filter(r => r['Name'] || r['Student ID']);
+      renderAll();
+      const now = new Date();
+      document.getElementById('last-updated').textContent = 'Last updated ' + now.toLocaleTimeString('en-GB', { hour: '2-digit', minute: '2-digit' });
+    }
+  } catch(e) {
+    document.getElementById('last-updated').textContent = 'Could not load data. Check your connection and try refreshing.';
+  }
+}
+
+function moodIndex(mood) { return moodOrder.indexOf(mood); }
+
+function renderAll() { renderMetrics(); renderMoodBreakdown(); renderRecent(); renderResponses(); }
+
+function renderMetrics() {
+  const n = allData.length;
+  const indices = allData.map(r => moodIndex(r['Wellbeing'])).filter(i => i >= 0);
+  const avg = indices.length ? (indices.reduce((a, b) => a + b, 0) / indices.length + 1).toFixed(1) : '-';
+  const flagged = allData.filter(r => moodIndex(r['Wellbeing']) <= 1).length;
+  document.getElementById('m-total').textContent = n;
+  document.getElementById('m-avg').textContent = avg === '-' ? '-' : avg + ' / 5';
+  document.getElementById('m-flag').textContent = flagged;
+}
+
+function renderMoodBreakdown() {
+  const n = allData.length;
+  const counts = moodOrder.map(m => allData.filter(r => r['Wellbeing'] === m).length);
+  document.getElementById('mood-breakdown').innerHTML = moodOrder.map((m, i) => {
+    const pct = n ? Math.round((counts[i] / n) * 100) : 0;
+    return `<div class="mood-row"><div class="mood-label">${m}</div><div class="mood-bar-wrap"><div class="mood-bar ${barClass[i]}" style="width:${pct}%"></div></div><div class="mood-count">${counts[i]}</div></div>`;
+  }).join('');
+}
+
+function renderRecent() {
+  const recent = [...allData].sort((a, b) => new Date(b['Timestamp']) - new Date(a['Timestamp'])).slice(0, 4);
+  if (!recent.length) { document.getElementById('recent-list').innerHTML = '<div class="empty">No responses yet.</div>'; return; }
+  document.getElementById('recent-list').innerHTML = recent.map(r => {
+    const ts = new Date(r['Timestamp']);
+    const time = isNaN(ts) ? '' : ts.toLocaleString('en-GB', { day: 'numeric', month: 'short', hour: '2-digit', minute: '2-digit' });
+    return `<div class="recent-item"><div class="recent-name">${r['Name'] || 'Unknown'}</div><div class="recent-meta">${r['Wellbeing'] || ''} &middot; ${time}</div></div>`;
+  }).join('');
+}
+
+function sortBy(by, btn) {
+  currentSort = by;
+  document.querySelectorAll('.sort-btn').forEach(b => b.classList.remove('active'));
+  btn.classList.add('active');
+  renderResponses();
+}
+
+function renderResponses() {
+  let sorted = [...allData];
+  if (currentSort === 'time') sorted.sort((a, b) => new Date(b['Timestamp']) - new Date(a['Timestamp']));
+  else sorted.sort((a, b) => moodIndex(a['Wellbeing']) - moodIndex(b['Wellbeing']));
+  if (!sorted.length) { document.getElementById('response-list').innerHTML = '<div class="empty">No responses yet.</div>'; return; }
+  document.getElementById('response-list').innerHTML = sorted.map(r => {
+    const ts = new Date(r['Timestamp']);
+    const time = isNaN(ts) ? '' : ts.toLocaleString('en-GB', { day: 'numeric', month: 'short', year: 'numeric', hour: '2-digit', minute: '2-digit' });
+    const name = r['Name'] || 'Unknown';
+    const initials = name.split(' ').map(w => w[0]).slice(0, 2).join('').toUpperCase();
+    const mood = r['Wellbeing'] || '';
+    const flagged = moodIndex(mood) <= 1;
+    return `<div class="response-card ${flagged ? 'flag' : ''}">
+      <div class="name-row">
+        <div class="avatar">${initials}</div>
+        <div class="name-meta"><div class="name">${name}</div><div class="time">ID: ${r['Student ID'] || '-'} &middot; ${time}</div></div>
+        <span style="${moodBadgeStyle(mood)}">${mood}</span>
+      </div>
+      <div class="response-fields">
+        ${r['Achieved since last check-in'] ? `<div class="rf"><div class="rf-label">Achievements since last check-in</div><div class="rf-val">${r['Achieved since last check-in']}</div></div>` : ''}
+        ${r['Finding difficult'] ? `<div class="rf"><div class="rf-label">Finding difficult</div><div class="rf-val">${r['Finding difficult']}</div></div>` : ''}
+        ${r['Other comments'] ? `<div class="rf full"><div class="rf-label">Other comments</div><div class="rf-val">${r['Other comments']}</div></div>` : ''}
+      </div>
+    </div>`;
+  }).join('');
+}
+
+function moodBadgeStyle(mood) {
+  const styles = {
+    'Really struggling': 'background:#FCEBEB;color:#A32D2D;',
+    'Finding it difficult': 'background:#FAEEDA;color:#854F0B;',
+    'Managing': 'background:#F1EFE8;color:#5F5E5A;',
+    'Doing well': 'background:#E1F5EE;color:#0F6E56;',
+    'Feeling great': 'background:#E1F5EE;color:#085041;'
+  };
+  return (styles[mood] || '') + 'font-size:11px;padding:3px 8px;border-radius:6px;font-weight:500;';
+}
+</script>
+</body>
+</html>
