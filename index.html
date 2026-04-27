@@ -1,0 +1,162 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student check-in</title>
+<style>
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif; background: #f5f5f3; min-height: 100vh; display: flex; align-items: flex-start; justify-content: center; padding: 2rem 1rem; }
+  .app { background: #ffffff; border-radius: 12px; border: 1px solid #e0ddd6; max-width: 600px; width: 100%; padding: 2rem; }
+  .header { border-bottom: 1px solid #e0ddd6; padding-bottom: 1rem; margin-bottom: 1.5rem; }
+  .header h1 { font-size: 20px; font-weight: 600; color: #1a1a1a; }
+  .header p { font-size: 13px; color: #6b6b6b; margin-top: 4px; line-height: 1.5; }
+  .screen { display: none; }
+  .screen.active { display: block; }
+  .field { margin-bottom: 1.25rem; }
+  .field label { display: block; font-size: 13px; font-weight: 500; color: #4a4a4a; margin-bottom: 6px; }
+  .field input[type="text"] { width: 100%; padding: 8px 12px; border: 1px solid #d0cdc6; border-radius: 8px; font-size: 14px; color: #1a1a1a; background: #fff; outline: none; }
+  .field input[type="text"]:focus { border-color: #888; }
+  .field textarea { width: 100%; padding: 8px 12px; border: 1px solid #d0cdc6; border-radius: 8px; font-size: 14px; color: #1a1a1a; background: #fff; outline: none; min-height: 80px; resize: vertical; font-family: inherit; }
+  .field textarea:focus { border-color: #888; }
+  .mood-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 8px; }
+  .mood-btn { border: 1px solid #d0cdc6; border-radius: 8px; padding: 10px 4px; cursor: pointer; background: #fff; color: #1a1a1a; font-size: 12px; text-align: center; line-height: 1.4; font-family: inherit; transition: border-color 0.15s, background 0.15s; }
+  .mood-btn:hover { border-color: #888; background: #f5f5f3; }
+  .mood-btn.selected { border-color: #1a1a1a; background: #f0efeb; font-weight: 600; }
+  .mood-dot { width: 8px; height: 8px; border-radius: 50%; margin: 0 auto 6px; }
+  .dot-1 { background: #E24B4A; }
+  .dot-2 { background: #EF9F27; }
+  .dot-3 { background: #888780; }
+  .dot-4 { background: #1D9E75; }
+  .dot-5 { background: #0F6E56; }
+  .field-error { font-size: 12px; color: #c0392b; margin-top: 4px; display: none; }
+  .submit-btn { width: 100%; padding: 11px; border: 1px solid #c0c0b8; border-radius: 8px; background: #fff; color: #1a1a1a; font-size: 14px; font-weight: 500; cursor: pointer; margin-top: 0.5rem; font-family: inherit; transition: background 0.15s; }
+  .submit-btn:hover { background: #f0efeb; }
+  .submit-btn:disabled { opacity: 0.5; cursor: not-allowed; }
+  .status-msg { font-size: 13px; color: #6b6b6b; margin-top: 10px; text-align: center; display: none; }
+  .error-box { background: #fdf0f0; border: 1px solid #e8b4b4; border-radius: 8px; padding: 10px 14px; margin-top: 1rem; font-size: 13px; color: #c0392b; display: none; }
+  .confirm-box { background: #f5f5f3; border: 1px solid #e0ddd6; border-radius: 12px; padding: 2rem 1.5rem; text-align: center; margin-top: 1rem; }
+  .confirm-box h2 { font-size: 16px; font-weight: 600; margin-bottom: 8px; color: #1a1a1a; }
+  .confirm-box p { font-size: 13px; color: #6b6b6b; line-height: 1.6; }
+</style>
+</head>
+<body>
+<div class="app">
+
+  <div id="screen-form" class="screen active">
+    <div class="header">
+      <h1>Student check-in</h1>
+      <p>Takes about two minutes. Your responses are seen only by your programme team.</p>
+    </div>
+    <div class="field">
+      <label>Your full name</label>
+      <input type="text" id="f-name" placeholder="e.g. Jane Smith" />
+      <div class="field-error" id="err-name">Please enter your name.</div>
+    </div>
+    <div class="field">
+      <label>Student ID</label>
+      <input type="text" id="f-id" placeholder="e.g. 123456789" />
+      <div class="field-error" id="err-id">Please enter your student ID.</div>
+    </div>
+    <div class="field">
+      <label>How are you doing at the moment?</label>
+      <div class="mood-grid">
+        <button class="mood-btn" data-mood="1" onclick="selectMood(1)"><div class="mood-dot dot-1"></div>Really struggling</button>
+        <button class="mood-btn" data-mood="2" onclick="selectMood(2)"><div class="mood-dot dot-2"></div>Finding it difficult</button>
+        <button class="mood-btn" data-mood="3" onclick="selectMood(3)"><div class="mood-dot dot-3"></div>Managing</button>
+        <button class="mood-btn" data-mood="4" onclick="selectMood(4)"><div class="mood-dot dot-4"></div>Doing well</button>
+        <button class="mood-btn" data-mood="5" onclick="selectMood(5)"><div class="mood-dot dot-5"></div>Feeling great</button>
+      </div>
+      <div class="field-error" id="err-mood">Please select an option.</div>
+    </div>
+    <div class="field">
+      <label>What have you achieved since the last check-in?</label>
+      <textarea id="f-well" placeholder="Share anything you feel comfortable with..."></textarea>
+    </div>
+    <div class="field">
+      <label>What are you finding difficult or where do you feel you need support?</label>
+      <textarea id="f-diff" placeholder="Be as specific as you like..."></textarea>
+    </div>
+    <div class="field">
+      <label>Is there anything else you would like to raise with your programme team?</label>
+      <textarea id="f-other" placeholder="Any questions, concerns, or comments..."></textarea>
+    </div>
+    <button class="submit-btn" id="submit-btn" onclick="submitForm()">Submit check-in</button>
+    <div class="status-msg" id="status-msg">Submitting your response...</div>
+    <div class="error-box" id="submit-error">There was a problem submitting your response. Please try again or contact your programme team directly.</div>
+  </div>
+
+  <div id="screen-confirm" class="screen">
+    <div class="header"><h1>Student check-in</h1></div>
+    <div class="confirm-box">
+      <h2>Thank you, <span id="confirm-name"></span>.</h2>
+      <p>Your check-in has been submitted. Your programme team will review your response and will follow up with you if needed.</p>
+    </div>
+  </div>
+
+</div>
+
+<script>
+const ENDPOINT = 'https://script.google.com/macros/s/AKfycbxIrpKbQe9yCFhV_C3BrNYR6E-5-YmSyvNShgoThrFQJ7fbqpc507BkYwUSbRfh1HrE/exec';
+
+let selectedMood = null;
+
+const moodLabels = ['', 'Really struggling', 'Finding it difficult', 'Managing', 'Doing well', 'Feeling great'];
+
+function selectMood(n) {
+  selectedMood = n;
+  document.querySelectorAll('.mood-btn').forEach(b => b.classList.remove('selected'));
+  document.querySelector('[data-mood="' + n + '"]').classList.add('selected');
+  document.getElementById('err-mood').style.display = 'none';
+}
+
+async function submitForm() {
+  let valid = true;
+  const name = document.getElementById('f-name').value.trim();
+  const sid = document.getElementById('f-id').value.trim();
+  if (!name) { document.getElementById('err-name').style.display = 'block'; valid = false; }
+  else document.getElementById('err-name').style.display = 'none';
+  if (!sid) { document.getElementById('err-id').style.display = 'block'; valid = false; }
+  else document.getElementById('err-id').style.display = 'none';
+  if (!selectedMood) { document.getElementById('err-mood').style.display = 'block'; valid = false; }
+  else document.getElementById('err-mood').style.display = 'none';
+  if (!valid) return;
+
+  const payload = {
+    name, sid,
+    mood: moodLabels[selectedMood],
+    well: document.getElementById('f-well').value.trim(),
+    diff: document.getElementById('f-diff').value.trim(),
+    other: document.getElementById('f-other').value.trim()
+  };
+
+  const btn = document.getElementById('submit-btn');
+  const status = document.getElementById('status-msg');
+  const errBox = document.getElementById('submit-error');
+  btn.disabled = true;
+  status.style.display = 'block';
+  errBox.style.display = 'none';
+
+  try {
+    await fetch(ENDPOINT, {
+      method: 'POST',
+      mode: 'no-cors',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify(payload)
+    });
+    document.getElementById('confirm-name').textContent = name.split(' ')[0];
+    showScreen('screen-confirm');
+  } catch(err) {
+    btn.disabled = false;
+    status.style.display = 'none';
+    errBox.style.display = 'block';
+  }
+}
+
+function showScreen(id) {
+  document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+  document.getElementById(id).classList.add('active');
+}
+</script>
+</body>
+</html>
